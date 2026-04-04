@@ -191,6 +191,9 @@ fun AlarmScreen(
                         onVolumeChange = { newVolume ->
                             alarmViewModel.setAlarmVolume(alarm.id, newVolume)
                         },
+                        onVibrationToggle = { enabled ->
+                            alarmViewModel.setAlarmVibration(alarm.id, enabled)
+                        },
                         onRingtoneClick = {
                             if (alarmIdForRingtonePicker != null) return@AlarmRow
                             alarmIdForRingtonePicker = alarm.id
@@ -287,6 +290,7 @@ fun AlarmRow(
     onRepeatDaysChange: (Set<Int>) -> Unit,
     onRingtoneClick: () -> Unit,
     onVolumeChange: (Float) -> Unit,
+    onVibrationToggle: (Boolean) -> Unit,
 ) {
     Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick)) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -375,6 +379,15 @@ fun AlarmRow(
                         onValueChangeFinished = { onVolumeChange(sliderVolume) },
                         valueRange = 0f..1f,
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.mobile_vibrate_24px),
+                        contentDescription = "Vibration",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Checkbox(
+                        checked = alarm.vibrationEnabled,
+                        onCheckedChange = { onVibrationToggle(it) },
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))

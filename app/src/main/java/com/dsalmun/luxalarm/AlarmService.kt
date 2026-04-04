@@ -77,13 +77,19 @@ class AlarmService : Service() {
                 val volume =
                     if (intent?.hasExtra("volume") == true) intent.getFloatExtra("volume", 1.0f)
                     else null
-                startAlarm(alarmId, ringtoneUri, volume)
+                val vibrationEnabled = intent?.getBooleanExtra("vibration_enabled", true) ?: true
+                startAlarm(alarmId, ringtoneUri, volume, vibrationEnabled)
                 START_STICKY
             }
         }
     }
 
-    private fun startAlarm(alarmId: Int, ringtoneUri: String?, volume: Float? = null) {
+    private fun startAlarm(
+        alarmId: Int,
+        ringtoneUri: String?,
+        volume: Float? = null,
+        vibrationEnabled: Boolean = true,
+    ) {
         isRunning = true
         try {
             createNotificationChannel()
@@ -117,24 +123,28 @@ class AlarmService : Service() {
                     ?: throw IllegalStateException("Failed to create MediaPlayer for alarm audio")
 
             // Start vibration
-            vibrator =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    val vibratorManager =
-                        getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                    vibratorManager.defaultVibrator
-                } else {
-                    @Suppress("DEPRECATION")
-                    getSystemService(VIBRATOR_SERVICE) as Vibrator
-                }
+            if (vibrationEnabled) {
+                vibrator =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val vibratorManager =
+                            getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                        vibratorManager.defaultVibrator
+                    } else {
+                        @Suppress("DEPRECATION")
+                        getSystemService(VIBRATOR_SERVICE) as Vibrator
+                    }
 
-            val vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500)
-            val vibrationEffect = VibrationEffect.createWaveform(vibrationPattern, 0)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val vibrationAttrs =
-                    VibrationAttributes.Builder().setUsage(VibrationAttributes.USAGE_ALARM).build()
-                vibrator?.vibrate(vibrationEffect, vibrationAttrs)
-            } else {
-                @Suppress("DEPRECATION") vibrator?.vibrate(vibrationEffect, audioAttrs)
+                val vibrationPattern = longArrayOf(0, 1000, 500, 1000, 500)
+                val vibrationEffect = VibrationEffect.createWaveform(vibrationPattern, 0)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val vibrationAttrs =
+                        VibrationAttributes.Builder()
+                            .setUsage(VibrationAttributes.USAGE_ALARM)
+                            .build()
+                    vibrator?.vibrate(vibrationEffect, vibrationAttrs)
+                } else {
+                    @Suppress("DEPRECATION") vibrator?.vibrate(vibrationEffect, audioAttrs)
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

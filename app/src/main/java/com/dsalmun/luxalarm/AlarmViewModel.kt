@@ -97,6 +97,10 @@ class AlarmViewModel(private val repository: IAlarmRepository) : ViewModel() {
         viewModelScope.launch { repository.setAlarmVolume(alarmId, volume) }
     }
 
+    fun setAlarmVibration(alarmId: Int, enabled: Boolean) {
+        viewModelScope.launch { repository.setAlarmVibration(alarmId, enabled) }
+    }
+
     sealed class Event {
         data class ShowAlarmSetMessage(val hour: Int, val minute: Int, val repeatDays: Set<Int>) :
             Event()

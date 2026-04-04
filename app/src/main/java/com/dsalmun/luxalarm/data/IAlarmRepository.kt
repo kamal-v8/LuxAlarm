@@ -35,6 +35,8 @@ interface IAlarmRepository {
 
     suspend fun setAlarmVolume(alarmId: Int, volume: Float?)
 
+    suspend fun setAlarmVibration(alarmId: Int, enabled: Boolean)
+
     suspend fun scheduleNextAlarm(): Boolean
 
     fun canScheduleExactAlarms(): Boolean

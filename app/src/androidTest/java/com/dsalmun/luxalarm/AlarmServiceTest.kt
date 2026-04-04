@@ -151,6 +151,8 @@ class FakeAlarmRepository : IAlarmRepository {
 
     override suspend fun setAlarmVolume(alarmId: Int, volume: Float?) {}
 
+    override suspend fun setAlarmVibration(alarmId: Int, enabled: Boolean) {}
+
     override suspend fun scheduleNextAlarm(): Boolean = true
 
     override fun canScheduleExactAlarms(): Boolean = true

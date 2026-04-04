@@ -107,6 +107,14 @@ class AlarmRepository(private val alarmDao: AlarmDao, private val context: Conte
         scheduleNextAlarm()
     }
 
+    override suspend fun setAlarmVibration(alarmId: Int, enabled: Boolean) {
+        val alarm = alarmDao.getAlarmById(alarmId) ?: return
+        val updatedAlarm = alarm.copy(vibrationEnabled = enabled)
+        alarmDao.update(updatedAlarm)
+        // Reschedule: vibration setting is embedded in the PendingIntent extras
+        scheduleNextAlarm()
+    }
+
     override suspend fun scheduleNextAlarm(): Boolean {
         val activeAlarms = alarmDao.getActiveAlarms()
 
@@ -138,6 +146,7 @@ class AlarmRepository(private val alarmDao: AlarmDao, private val context: Conte
                 putIntegerArrayListExtra("alarm_ids", ArrayList(alarmIds))
                 putExtra("ringtone_uri", nextAlarm.ringtoneUri)
                 nextAlarm.volume?.let { putExtra("volume", it) }
+                putExtra("vibration_enabled", nextAlarm.vibrationEnabled)
             }
         val pendingIntent =
             PendingIntent.getBroadcast(

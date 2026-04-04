@@ -232,12 +232,14 @@ class MigrationTest {
             assertEquals(30, alarm1.minute)
             assertEquals("content://media/ringtone", alarm1.ringtoneUri)
             assertNull(alarm1.volume)
+            assertEquals(true, alarm1.vibrationEnabled)
 
             val alarm2 = alarms.first { it.id == 2 }
             assertEquals(9, alarm2.hour)
             assertEquals(0, alarm2.minute)
             assertNull(alarm2.ringtoneUri)
             assertNull(alarm2.volume)
+            assertEquals(true, alarm2.vibrationEnabled)
         } finally {
             db.close()
         }
@@ -273,6 +275,41 @@ class MigrationTest {
             assertEquals(8, newAlarm.hour)
             assertEquals(15, newAlarm.minute)
             assertEquals(0.5f, newAlarm.volume)
+        } finally {
+            db.close()
+        }
+    }
+
+    @Test
+    fun migrate2To3_newRowsCanHaveVibrationDisabled() {
+        val v2Alarms =
+            listOf(
+                V2Alarm(
+                    id = 1,
+                    hour = 6,
+                    minute = 0,
+                    isActive = true,
+                    repeatDays = "",
+                    ringtoneUri = null,
+                )
+            )
+        createV2Database(v2Alarms)
+
+        val db = openV3Database()
+        try {
+            val dao = db.alarmDao()
+            runBlocking { dao.insert(AlarmItem(hour = 8, minute = 15, vibrationEnabled = false)) }
+
+            val alarms = runBlocking { dao.getAllAlarms().first() }
+            assertEquals(2, alarms.size)
+
+            val migrated = alarms.first { it.id == 1 }
+            assertEquals(true, migrated.vibrationEnabled)
+
+            val newAlarm = alarms.first { it.id != 1 }
+            assertEquals(8, newAlarm.hour)
+            assertEquals(15, newAlarm.minute)
+            assertEquals(false, newAlarm.vibrationEnabled)
         } finally {
             db.close()
         }

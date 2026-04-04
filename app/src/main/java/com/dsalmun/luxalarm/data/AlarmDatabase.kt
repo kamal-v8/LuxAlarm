@@ -42,6 +42,9 @@ abstract class AlarmDatabase : RoomDatabase() {
             object : Migration(2, 3) {
                 override fun migrate(db: SupportSQLiteDatabase) {
                     db.execSQL("ALTER TABLE alarms ADD COLUMN volume REAL")
+                    db.execSQL(
+                        "ALTER TABLE alarms ADD COLUMN vibrationEnabled INTEGER NOT NULL DEFAULT 1"
+                    )
                 }
             }
 

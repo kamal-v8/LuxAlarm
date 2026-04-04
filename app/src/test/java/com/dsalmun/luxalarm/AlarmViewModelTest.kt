@@ -155,6 +155,18 @@ class AlarmViewModelTest {
     }
 
     @Test
+    fun setAlarmVibration_callsRepository() = runTest {
+        val alarmId = 1
+
+        viewModel.setAlarmVibration(alarmId, false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(1, fakeRepository.setAlarmVibrationCallCount)
+        assertEquals(alarmId, fakeRepository.lastVibrationAlarmId)
+        assertEquals(false, fakeRepository.lastVibrationEnabled)
+    }
+
+    @Test
     fun alarms_stateFlowCollectsFromRepository() = runTest {
         val fakeAlarms = listOf(AlarmItem(id = 1, hour = 8, minute = 0))
         val newViewModel = AlarmViewModel(fakeRepository)
@@ -182,6 +194,9 @@ class FakeAlarmRepository : IAlarmRepository {
     var setAlarmRingtoneCallCount = 0
     var lastRingtoneAlarmId: Int? = null
     var lastRingtoneUri: String? = null
+    var setAlarmVibrationCallCount = 0
+    var lastVibrationAlarmId: Int? = null
+    var lastVibrationEnabled: Boolean? = null
 
     fun setShouldSucceed(succeed: Boolean) {
         shouldSucceed = succeed
@@ -223,6 +238,12 @@ class FakeAlarmRepository : IAlarmRepository {
     }
 
     override suspend fun setAlarmVolume(alarmId: Int, volume: Float?) {}
+
+    override suspend fun setAlarmVibration(alarmId: Int, enabled: Boolean) {
+        setAlarmVibrationCallCount++
+        lastVibrationAlarmId = alarmId
+        lastVibrationEnabled = enabled
+    }
 
     override suspend fun scheduleNextAlarm(): Boolean = shouldSucceed
 
