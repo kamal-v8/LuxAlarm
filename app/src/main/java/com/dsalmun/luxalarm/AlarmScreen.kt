@@ -270,9 +270,7 @@ fun AlarmScreen(
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { alarmToDelete = null }) { Text("Cancel") }
-            },
+            dismissButton = { TextButton(onClick = { alarmToDelete = null }) { Text("Cancel") } },
         )
     }
 }
@@ -305,13 +303,6 @@ fun AlarmRow(
                     modifier = Modifier.clickable(onClick = onTimeClick),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            painter = painterResource(R.drawable.delete_24px),
-                            contentDescription = "Delete alarm",
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
                     Column(horizontalAlignment = Alignment.End) {
                         Icon(
                             painter =
@@ -376,15 +367,32 @@ fun AlarmRow(
                         contentDescription = "Volume",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    var sliderVolume by remember(alarm.volume) {
-                        mutableFloatStateOf(alarm.volume ?: 1f)
-                    }
+                    var sliderVolume by
+                        remember(alarm.volume) { mutableFloatStateOf(alarm.volume ?: 1f) }
                     Slider(
                         value = sliderVolume,
                         onValueChange = { sliderVolume = it },
                         onValueChangeFinished = { onVolumeChange(sliderVolume) },
                         valueRange = 0f..1f,
                         modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().clickable(onClick = onDelete),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.delete_24px),
+                        contentDescription = "Delete alarm",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        text = "Delete",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }

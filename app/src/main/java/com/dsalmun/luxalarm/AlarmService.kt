@@ -75,8 +75,7 @@ class AlarmService : Service() {
                 val alarmId = intent?.getIntExtra("alarm_id", -1) ?: -1
                 val ringtoneUri = intent?.getStringExtra("ringtone_uri")
                 val volume =
-                    if (intent?.hasExtra("volume") == true)
-                        intent.getFloatExtra("volume", 1.0f)
+                    if (intent?.hasExtra("volume") == true) intent.getFloatExtra("volume", 1.0f)
                     else null
                 startAlarm(alarmId, ringtoneUri, volume)
                 START_STICKY
