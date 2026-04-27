@@ -43,7 +43,7 @@ class SettingsManager(context: Context) {
         private const val PREFS_NAME = "lux_alarm_settings"
         private const val KEY_REQUIRED_LUX_LEVEL = "required_lux_level"
         const val DEFAULT_LUX_LEVEL = 50f
-        const val MIN_LUX_LEVEL = 10f
+        const val MIN_LUX_LEVEL = 1f
         const val MAX_LUX_LEVEL = 1000f
     }
 }
