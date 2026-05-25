@@ -1,0 +1,26 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+    groups:
+      android-gradle-patch-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+    ignore:
+      - dependency-name: "com.android.tools.build:gradle"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "org.jetbrains.kotlin.android"
+        update-types:
+          - "version-update:semver-major"
