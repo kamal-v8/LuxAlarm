@@ -52,6 +52,7 @@ import com.dsalmun.luxalarm.data.AlarmItem
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -256,7 +257,7 @@ fun AlarmScreen(
             text = {
                 Text(
                     String.format(
-                        Locale.getDefault(),
+                        LocalLocale.current.platformLocale,
                         "Delete the %02d:%02d alarm?",
                         alarmToDelete!!.hour,
                         alarmToDelete!!.minute,
@@ -301,7 +302,7 @@ fun AlarmRow(
             ) {
                 Text(
                     text =
-                        String.format(Locale.getDefault(), "%02d:%02d", alarm.hour, alarm.minute),
+                        String.format(LocalLocale.current.platformLocale, "%02d:%02d", alarm.hour, alarm.minute),
                     fontSize = 48.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.clickable(onClick = onTimeClick),
