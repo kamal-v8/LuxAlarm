@@ -260,6 +260,7 @@ class AlarmService : Service() {
             .setContentText("Tap to open alarm screen")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setFullScreenIntent(fullScreenPendingIntent, true)
             .setOngoing(true)
             .build()
