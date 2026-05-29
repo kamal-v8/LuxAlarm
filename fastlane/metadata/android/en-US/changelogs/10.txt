@@ -1,0 +1,3 @@
+- Improved alarm screen launch reliability on Android 14+
+- Reduced delay before alarm notification appears while the screen is on
+- Updated Android build tooling and dependencies
