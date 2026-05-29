@@ -17,6 +17,7 @@
 package com.dsalmun.luxalarm
 
 import android.annotation.SuppressLint
+import android.app.ActivityOptions
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -33,6 +34,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.VibrationAttributes
@@ -219,6 +221,22 @@ class AlarmService : Service() {
         notificationManager.createNotificationChannel(channel)
     }
 
+    private fun alarmActivityOptions(): Bundle? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
+
+        val mode =
+            if (Build.VERSION.SDK_INT >= 36) {
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOW_ALWAYS
+            } else {
+                @Suppress("DEPRECATION")
+                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+            }
+
+        return ActivityOptions.makeBasic()
+            .setPendingIntentCreatorBackgroundActivityStartMode(mode)
+            .toBundle()
+    }
+
     // Alarm apps have FullScreenIntent enabled
     @SuppressLint("FullScreenIntentPolicy")
     private fun buildAlarmNotification(alarmId: Int): Notification {
@@ -233,6 +251,7 @@ class AlarmService : Service() {
                 0,
                 fullScreenIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                alarmActivityOptions(),
             )
 
         return NotificationCompat.Builder(this, ALARM_CHANNEL_ID)
