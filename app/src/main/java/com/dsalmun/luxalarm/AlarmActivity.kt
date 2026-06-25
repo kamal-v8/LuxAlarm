@@ -81,6 +81,12 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
             }
         }
         setupFullscreen()
+
+        try {
+            startLockTask()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun setupLightSensor() {
@@ -129,6 +135,11 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     }
 
     private fun stopAlarm() {
+        try {
+            stopLockTask()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         val stopIntent =
             Intent(this, AlarmService::class.java).apply {
                 action = AlarmService.ACTION_STOP_ALARM
