@@ -24,8 +24,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -165,9 +163,11 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.decorView.post {
                 window.insetsController?.let { controller ->
-                    controller.hide(WindowInsets.Type.statusBars())
-                    controller.systemBarsBehavior =
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                    // Hide status and navigation bars
+                    controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                    // Prevent system bars from showing on swipe - only show on tap
+                    // VALUE 0 = BEHAVIOR_SHOW_BARS_BY_TAP (prevents swipe-down gesture from revealing bars)
+                    controller.systemBarsBehavior = 0
                 }
             }
         }
@@ -189,22 +189,23 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     private fun setupPinning() {
         if (!lockScreenPinEnabled) return
 
-        val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            keyguardManager.requestDismissKeyguard(this, null)
-        }
+        // Initial setup - actual dismissal happens when we gain focus
+    }
 
-        // Periodic safety net: re-show if hidden for any reason (Android 12 gesture nav, etc.)
-        val handler = Handler(Looper.getMainLooper())
-        val runner = object : Runnable {
-            override fun run() {
-                if (!alarmDismissed && AlarmService.isRunning) {
-                    relaunchSelf()
-                }
-                handler.postDelayed(this, 2000)
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus && lockScreenPinEnabled && !alarmDismissed) {
+            // We have focus - ensure keyguard is dismissed so we show over lock screen
+            val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                keyguardManager.requestDismissKeyguard(this, null)
             }
         }
-        handler.postDelayed(runner, 2000)
+        // If we lose focus (e.g., notification shade pulled down) and alarm is still ringing,
+        // immediately relaunch to regain focus
+        if (!hasFocus && lockScreenPinEnabled && !alarmDismissed && AlarmService.isRunning) {
+            relaunchSelf()
+        }
     }
 
     /** Called when the user presses the Home button. Re-launch if alarm still ringing. */
