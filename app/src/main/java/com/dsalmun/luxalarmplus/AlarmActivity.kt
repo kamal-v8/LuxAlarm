@@ -24,6 +24,8 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -68,6 +70,17 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     // Screen pinning (self-re-launch approach)
     private var lockScreenPinEnabled by mutableStateOf(SettingsManager.DEFAULT_LOCK_SCREEN_PIN)
     private var alarmDismissed = false
+
+    // Aggressive periodic relaunch handler - runs every 300ms to reclaim screen from system UI
+    private val relaunchHandler = Handler(Looper.getMainLooper())
+    private val relaunchRunnable = object : Runnable {
+        override fun run() {
+            if (!alarmDismissed && AlarmService.isRunning && lockScreenPinEnabled) {
+                forceRelaunch()
+            }
+            relaunchHandler.postDelayed(this, 300)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,11 +176,8 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.decorView.post {
                 window.insetsController?.let { controller ->
-                    // Hide status and navigation bars
+                    // Hide status and navigation bars to maximize visible area
                     controller.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                    // Prevent system bars from showing on swipe - only show on tap
-                    // VALUE 0 = BEHAVIOR_SHOW_BARS_BY_TAP (prevents swipe-down gesture from revealing bars)
-                    controller.systemBarsBehavior = 0
                 }
             }
         }
@@ -189,22 +199,27 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     private fun setupPinning() {
         if (!lockScreenPinEnabled) return
 
-        // Initial setup - actual dismissal happens when we gain focus
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus && lockScreenPinEnabled && !alarmDismissed) {
-            // We have focus - ensure keyguard is dismissed so we show over lock screen
+        // Dismiss keyguard immediately so we show over the lock screen
+        try {
             val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 keyguardManager.requestDismissKeyguard(this, null)
             }
+        } catch (e: Exception) {
+            // Ignore if keyguard dismiss fails - relaunch handler will keep us on top
         }
+
+        // Start the aggressive periodic relaunch handler (300ms interval)
+        // This continuously reclaims the screen from any system UI (notification shade, etc.)
+        relaunchHandler.post(relaunchRunnable)
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
         // If we lose focus (e.g., notification shade pulled down) and alarm is still ringing,
         // immediately relaunch to regain focus
         if (!hasFocus && lockScreenPinEnabled && !alarmDismissed && AlarmService.isRunning) {
-            relaunchSelf()
+            forceRelaunch()
         }
     }
 
@@ -212,7 +227,7 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (lockScreenPinEnabled && !alarmDismissed && AlarmService.isRunning) {
-            relaunchSelf()
+            forceRelaunch()
         }
     }
 
@@ -220,25 +235,40 @@ class AlarmActivity : ComponentActivity(), SensorEventListener {
     override fun onStop() {
         super.onStop()
         if (lockScreenPinEnabled && !alarmDismissed && AlarmService.isRunning) {
-            relaunchSelf()
+            forceRelaunch()
         }
     }
 
     /**
-     * Re-launch this activity on top, same way the AlarmService's
-     * full-screen notification does it.
+     * Forcefully re-launch this activity on top of any system UI.
+     * Uses FLAG_ACTIVITY_REORDER_TO_FRONT to avoid recreation when possible,
+     * and FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP as fallback.
+     * Called every 300ms by the periodic handler to stay on top of the notification shade.
      */
-    private fun relaunchSelf() {
+    private fun forceRelaunch() {
         val intent = Intent(this, AlarmActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
             putExtra("alarm_id", alarmId)
         }
-        startActivity(intent)
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            // If reorder fails (rare), try without it
+            val fallbackIntent = Intent(this, AlarmActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("alarm_id", alarmId)
+            }
+            startActivity(fallbackIntent)
+        }
     }
 
     private fun stopAlarm() {
         // Mark as dismissed BEFORE finishing so onStop won't re-launch
         alarmDismissed = true
+        // Stop the periodic relaunch handler to prevent memory leaks
+        relaunchHandler.removeCallbacks(relaunchRunnable)
         val stopIntent =
             Intent(this, AlarmService::class.java).apply {
                 action = AlarmService.ACTION_STOP_ALARM

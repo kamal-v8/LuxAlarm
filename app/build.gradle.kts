@@ -30,8 +30,8 @@ android {
         applicationId = "com.dsalmun.luxalarmplus"
         minSdk = 28
         targetSdk = 36
-        versionCode = 16
-        versionName = "3.0.0"
+        versionCode = 17
+        versionName = "3.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
